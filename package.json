@@ -1,0 +1,18 @@
+{
+  "name": "opencode-top-secret",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/plugin.js",
+  "exports": "./src/plugin.js",
+  "files": [
+    "src"
+  ],
+  "description": "Best-effort local redaction of secrets and personal data in OpenCode context",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
