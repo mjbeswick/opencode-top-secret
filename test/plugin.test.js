@@ -30,3 +30,18 @@ test("V2 setup refuses to activate without the required context hook", async () 
     /Required context hook is unavailable/,
   )
 })
+
+test("V2 context hook redacts model-bound messages", async () => {
+  const hooks = new Map()
+  const plugin = await OpenCodeSecretGuard.setup({
+    session: { hook: async (name, callback) => { hooks.set(name, callback) } },
+    tool: { hook: async () => {} },
+  })
+  const secret = `sk-${"AbCdEf0123456789".repeat(2)}`
+  const event = { system: [], messages: [{ parts: [{ type: "text", text: `Please use ${secret}` }] }] }
+
+  await hooks.get("context")(event)
+
+  assert.equal(event.messages[0].parts[0].text.includes(secret), false)
+  assert.equal(typeof plugin, "function")
+})
