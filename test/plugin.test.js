@@ -11,7 +11,7 @@ test("legacy hooks redact model-bound messages and restore local outputs", async
   })
   const secret = `sk-${"AbCdEf0123456789".repeat(2)}`
   const output = { messages: [{ parts: [{ type: "text", text: `Please use ${secret}` }] }] }
-  await plugin["experimental.chat.messages.transform"]({}, output)
+  await plugin["experimental.chat.messages.transform"]({ model: { providerID: "custom-provider" } }, output)
   const masked = output.messages[0].parts[0].text
   assert.equal(masked.includes(secret), false)
 
@@ -31,17 +31,25 @@ test("V2 setup refuses to activate without the required context hook", async () 
   )
 })
 
-test("V2 context hook redacts model-bound messages", async () => {
-  const hooks = new Map()
-  const plugin = await OpenCodeSecretGuard.setup({
-    session: { hook: async (name, callback) => { hooks.set(name, callback) } },
-    tool: { hook: async () => {} },
-  })
-  const secret = `sk-${"AbCdEf0123456789".repeat(2)}`
-  const event = { system: [], messages: [{ parts: [{ type: "text", text: `Please use ${secret}` }] }] }
+test("V2 context hook redacts without depending on provider metadata", async () => {
+  for (const providerID of ["openai", "anthropic", "google", "custom-provider"]) {
+    const hooks = new Map()
+    const plugin = await OpenCodeSecretGuard.setup({
+      session: { hook: async (name, callback) => { hooks.set(name, callback) } },
+      tool: { hook: async () => {} },
+    })
+    const secret = `sk-${"AbCdEf0123456789".repeat(2)}`
+    const event = {
+      provider: { id: providerID },
+      model: { providerID, modelID: "example-model" },
+      system: [],
+      messages: [{ parts: [{ type: "text", text: `Please use ${secret}` }] }],
+    }
 
-  await hooks.get("context")(event)
+    await hooks.get("context")(event)
 
-  assert.equal(event.messages[0].parts[0].text.includes(secret), false)
-  assert.equal(typeof plugin, "function")
+    assert.equal(event.messages[0].parts[0].text.includes(secret), false)
+    assert.equal(event.provider.id, providerID)
+    assert.equal(typeof plugin, "function")
+  }
 })
