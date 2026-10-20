@@ -4,14 +4,6 @@ OpenCode Top Secret is a local plugin that masks selected credential and persona
 
 > **Status and security disclaimer:** This is a best-effort prototype, not an approved security control. It does not guarantee that sensitive data will be kept from a model provider and must not be treated as a security boundary or a substitute for approved data-handling and secret-management policies. Live end-to-end compatibility with a LightLLM deployment has not been confirmed.
 
-## Intended deployment
-
-OpenCode V2 sends model requests through LightLLM’s OpenAI-compatible API. Redaction is performed at OpenCode’s `context` hook before model dispatch; the plugin does not call LightLLM directly.
-
-The intended target is the latest OpenCode V2 release. Older OpenCode versions and other model providers are out of scope. Before relying on an OpenCode update, verify that the hooks used here still work. The LightLLM integration still requires end-to-end testing with the actual endpoint, model, and options in use.
-
-LightLLM documentation: [OpenAI API usage](https://lightllm-en.readthedocs.io/en/latest/tutorial/openai.html) and [function calling](https://lightllm-en.readthedocs.io/en/latest/tutorial/function_calling.html).
-
 ## What it redacts
 
 The redactor applies patterns for:
@@ -21,14 +13,6 @@ The redactor applies patterns for:
 - Values of process environment variables whose names suggest a secret, token, password, API key, or credential, when those values appear in scanned text. It does not read `.env` files.
 
 Placeholders use random opaque tokens. The reversible mapping stays in memory; it is not persisted or logged, and it is lost when OpenCode restarts. Restoring a placeholder reintroduces its original value locally.
-
-## OpenCode V2 hook and response behavior
-
-The plugin requires the V2 `context` hook and aborts setup if it cannot register it. It also attempts to register `compaction`, `generate`, and `title` hooks, plus `tool.execute.before` and `http.response` hooks; these additional hooks are best-effort.
-
-The HTTP response hook restores placeholders only in parseable JSON responses. **SSE responses are not restored.** LightLLM documents SSE streaming; if the OpenCode–LightLLM configuration streams responses, placeholders may remain in the streamed response. Outbound masking and local response restoration are separate behaviors.
-
-The source retains a legacy server implementation, but the current OpenCode V2 runtime uses the V2 `setup` entry point; the legacy implementation is not a fallback for V2.
 
 ## Install globally from GitHub
 
